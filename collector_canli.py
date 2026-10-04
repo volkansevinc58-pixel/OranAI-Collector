@@ -24,7 +24,7 @@ PREMATCH = "collector_canli_prematch.csv"
 SNAPSHOT = "collector_canli_snapshots.csv"
 
 MASTER_FIELDS = [
-    "Tarih", "Saat", "EventID", "Ev", "Deplasman",
+    "Tarih", "Saat", "Guncel_Tarih", "Guncel_Saat", "EventID", "Ev", "Deplasman",
     "Ilk_Gorulme_Zamani",
     "Ilk_MS1", "Ilk_MSX", "Ilk_MS2",
     "Ilk_KG_Var", "Ilk_KG_Yok",
@@ -419,6 +419,8 @@ def master_yeni_satir(
     return {
         "Tarih": temizle(fields[7]),
         "Saat": temizle(fields[6]),
+        "Guncel_Tarih": temizle(fields[7]),
+        "Guncel_Saat": temizle(fields[6]),
         "EventID": eid,
         "Ev": temizle(fields[1]),
         "Deplasman": temizle(fields[3]),
@@ -629,6 +631,8 @@ for tarih_dt in [
 
         else:
 
+            master[eid]["Guncel_Tarih"] = tarih
+            master[eid]["Guncel_Saat"] = saat
             master[eid][
                 "Son_Gorulme_Zamani"
             ] = zaman
