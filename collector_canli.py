@@ -517,6 +517,13 @@ prematch = csv_dict_oku(
     PREMATCH
 )
 
+# Eski master kayitlarinda Guncel_* alanlarini ilk program bilgisiyle tamamla
+for row in master.values():
+    if not row.get("Guncel_Tarih"):
+        row["Guncel_Tarih"] = row.get("Tarih", "")
+    if not row.get("Guncel_Saat"):
+        row["Guncel_Saat"] = row.get("Saat", "")
+
 master_once = len(master)
 
 toplam_gorulen = 0
@@ -685,9 +692,7 @@ for tarih_dt in [
 
     for eid, row in master.items():
 
-        if row.get(
-            "Tarih"
-        ) != hedef:
+        if (row.get("Guncel_Tarih") or row.get("Tarih")) != hedef:
             continue
 
         if eid in su_an_ids:
