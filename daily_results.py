@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 
 import requests
 import csv
@@ -6,6 +6,7 @@ import re
 from datetime import datetime, timedelta
 
 URL = "https://arsiv.mackolik.com/AjaxHandlers/ProgramDataHandler.ashx"
+MASTER_CSV = "collector_canli_master.csv"
 
 HEADERS = {
     "User-Agent": (
@@ -49,6 +50,19 @@ def sayi(v):
     except:
         return None
 
+
+def master_oku():
+    sonuc = {}
+    try:
+        with open(MASTER_CSV, "r", encoding="utf-8-sig", newline="") as f:
+            reader = csv.DictReader(f, delimiter=";")
+            for row in reader:
+                eid = str(row.get("EventID", "")).strip()
+                if eid:
+                    sonuc[eid] = row
+    except FileNotFoundError:
+        print("MASTER BULUNAMADI:", MASTER_CSV)
+    return sonuc
 
 def alanlara_ayir(record):
     content = record[1:-1]
@@ -275,6 +289,32 @@ def sonuc_hesapla(ev_gol, dep_gol):
         s35,
         toplam
     )
+
+
+
+def kalite_kontrol(eid, sonuc_row, master, hedef_tarih):
+    master_row = master.get(eid)
+    if master_row is None:
+        return False, "MASTERDA_YOK"
+
+    master_tarih = (
+        master_row.get("Guncel_Tarih")
+        or master_row.get("Tarih", "")
+    ).strip()
+
+    if master_tarih != hedef_tarih:
+        return False, "TARIH_UYUSMAZ"
+
+    master_ev = temizle(master_row.get("Ev", ""))
+    master_dep = temizle(master_row.get("Deplasman", ""))
+    sonuc_ev = temizle(sonuc_row.get("Ev", ""))
+    sonuc_dep = temizle(sonuc_row.get("Deplasman", ""))
+
+    if master_ev != sonuc_ev or master_dep != sonuc_dep:
+        return False, "TAKIM_UYUSMAZ"
+
+    return True, "ONAYLI"
+
 
 
 FINAL_FIELDS = [
@@ -550,6 +590,25 @@ def tarihi_isle(tarih_dt, simdi):
                 )
         }
 
+
+    master = master_oku()
+    onayli_rows = {}
+    reddedilen_rows = {}
+    kalite_sayac = {}
+
+    for eid, row in final_rows.items():
+        uygun, neden = kalite_kontrol(
+            eid, row, master, HEDEF_TARIH
+        )
+        kalite_sayac[neden] = kalite_sayac.get(neden, 0) + 1
+
+        if uygun:
+            onayli_rows[eid] = row
+        else:
+            reddedilen_rows[eid] = (row, neden)
+
+    final_rows = onayli_rows
+
     with open(
         FINAL_CSV,
         "w",
@@ -574,6 +633,50 @@ def tarihi_isle(tarih_dt, simdi):
         ):
             writer.writerow(row)
 
+
+    KALITE_RED_CSV = (
+        f"oranai_{DOSYA_TARIH}"
+        "_KALITE_RED.csv"
+    )
+
+    with open(
+        KALITE_RED_CSV,
+        "w",
+        encoding="utf-8-sig",
+        newline=""
+    ) as f:
+        kalite_fields = [
+            "Tarih", "Saat", "EventID",
+            "Ev", "Deplasman", "Ret_Nedeni"
+        ]
+        writer = csv.DictWriter(
+            f,
+            fieldnames=kalite_fields,
+            delimiter=";"
+        )
+        writer.writeheader()
+
+        for row, neden in sorted(
+            reddedilen_rows.values(),
+            key=lambda x: (x[0].get("Saat", ""), x[0].get("EventID", ""))
+        ):
+            writer.writerow({
+                "Tarih": row.get("Tarih", ""),
+                "Saat": row.get("Saat", ""),
+                "EventID": row.get("EventID", ""),
+                "Ev": row.get("Ev", ""),
+                "Deplasman": row.get("Deplasman", ""),
+                "Ret_Nedeni": neden
+            })
+
+    print()
+    print("KALITE KONTROL")
+    for neden in sorted(kalite_sayac):
+        print("  ", neden, ":", kalite_sayac[neden])
+    print("  Toplam aday       :", len(final_rows) + len(reddedilen_rows))
+    print("  ONAYLI             :", len(final_rows))
+    print("  REDDEDILEN         :", len(reddedilen_rows))
+    print("  Red raporu         :", KALITE_RED_CSV)
     print()
     print("DURUM DAGILIMI")
 
@@ -599,7 +702,7 @@ def tarihi_isle(tarih_dt, simdi):
     )
 
     print(
-        "Kesin final Status=4  :",
+        "Kalite onayli final   :",
         len(final_rows)
     )
 
@@ -650,7 +753,8 @@ print(
 )
 
 print(
-    "Ana database  : DEGISTIRILMEDI"
+    "Guvenli sonuc : OLUSTURULDU"
 )
 
 print("=" * 75)
+
