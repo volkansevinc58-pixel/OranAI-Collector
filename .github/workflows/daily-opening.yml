@@ -1,9 +1,9 @@
-name: OranAI Cloud Collector
+name: OranAI Daily Opening
 
 on:
   workflow_dispatch:
   schedule:
-    - cron: "2-57/5 * * * *"
+    - cron: "59 20 * * *"
 
 permissions:
   contents: write
@@ -13,9 +13,9 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  collect:
+  opening:
     runs-on: ubuntu-latest
-    timeout-minutes: 4
+    timeout-minutes: 10
 
     env:
       TZ: Europe/Istanbul
@@ -29,32 +29,29 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Python paketlerini kur
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install requests
-
-      - name: Saat dilimini kontrol et
+      - name: Turkiye saatini kontrol et
         run: |
           echo "TZ=$TZ"
           date
           python -c "from datetime import datetime; print('Python saati:', datetime.now())"
 
-      - name: Collector calistir
-        run: python collector_canli.py
+      - name: Gunluk acilis snapshot olustur
+        run: python daily_opening.py
 
-      - name: Verileri kaydet
+      - name: Acilis snapshot kaydet
         run: |
           git config user.name "OranAI Bot"
           git config user.email "actions@github.com"
 
-          git add -f collector_canli_master.csv
-          git add -f collector_canli_prematch.csv
+          git add -f oranai_*_ACILIS.csv
 
           if git diff --cached --quiet; then
-            echo "Yeni veri yok."
+            echo "Kaydedilecek yeni acilis snapshot yok."
             exit 0
           fi
 
-          git commit -m "Cloud collector update"
+          git commit -m "Daily opening snapshot"
           git push
+
+
+
