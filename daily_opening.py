@@ -1,4 +1,4 @@
-﻿import csv
+import csv
 from datetime import datetime, timedelta
 
 MASTER = "collector_canli_master.csv"
@@ -24,7 +24,11 @@ OPENING_FIELDS = [
 ]
 
 simdi = datetime.now()
-hedef_dt = simdi.date() + timedelta(days=1)
+# 23:59 GitHub gorevi gece yarisi sonrasina sarkarsa ayni gunu hedefle.
+if simdi.hour < 3:
+    hedef_dt = simdi.date()
+else:
+    hedef_dt = simdi.date() + timedelta(days=1)
 
 hedef_tarih = hedef_dt.strftime("%d.%m.%Y")
 dosya_tarih = hedef_dt.strftime("%d_%m_%Y")
@@ -47,7 +51,7 @@ with open(
 
     for row in reader:
 
-        if row.get("Tarih") != hedef_tarih:
+        if (row.get("Guncel_Tarih") or row.get("Tarih")) != hedef_tarih:
             continue
 
         if not row.get("EventID"):
@@ -89,3 +93,4 @@ print("Hedef tarih  :", hedef_tarih)
 print("Mac sayisi   :", len(rows))
 print("Dosya        :", OUTPUT)
 print("=" * 75)
+
