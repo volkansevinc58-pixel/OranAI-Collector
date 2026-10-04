@@ -3,7 +3,9 @@ name: OranAI Daily Results
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 5 * * *"
+    - cron: "0 5 * * *"  # 08:00 Turkiye - ana cekim
+    - cron: "0 9 * * *"  # 12:00 Turkiye - retry
+    - cron: "0 15 * * *" # 18:00 Turkiye - retry
 
 permissions:
   contents: write
