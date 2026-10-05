@@ -50,7 +50,15 @@ jobs:
           git config user.name "OranAI Bot"
           git config user.email "actions@github.com"
 
-          git add -f oranai_*_SONUC_GUVENLI.csv
+          shopt -s nullglob
+          files=(oranai_*_SONUC_GUVENLI.csv)
+
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "Guvenli sonuc dosyasi olusmadi. Kaydedilecek dosya yok."
+            exit 0
+          fi
+
+          git add -f "${files[@]}"
 
           if git diff --cached --quiet; then
             echo "Kaydedilecek yeni sonuc yok."
@@ -59,6 +67,3 @@ jobs:
 
           git commit -m "Daily results update"
           git push
-
-
-
