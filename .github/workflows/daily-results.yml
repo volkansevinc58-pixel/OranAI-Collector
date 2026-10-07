@@ -66,4 +66,25 @@ jobs:
           fi
 
           git commit -m "Daily results update"
-          git push
+          for attempt in 1 2 3; do
+            echo "Push denemesi: $attempt/3"
+
+            if git push origin HEAD:main; then
+              echo "Push basarili."
+              exit 0
+            fi
+
+            echo "Push basarisiz. Remote guncellenip tekrar denenecek."
+            git fetch origin main
+
+            if ! git rebase origin/main; then
+              echo "Rebase basarisiz. Otomatik islem durduruldu."
+              git rebase --abort || true
+              exit 1
+            fi
+
+            sleep 10
+          done
+
+          echo "3 push denemesi de basarisiz."
+          exit 1

@@ -237,7 +237,7 @@ def gunu_cek(tarih_dt):
     raw_b = veri_cek(
         onceki,
         -1,
-        1
+        -1
     )
 
     B = maclari_bul(
@@ -355,6 +355,34 @@ FINAL_FIELDS = [
     "Sonuc_Kayit_Zamani"
 ]
 
+def mevcut_sonuclari_oku(dosya):
+    sonuc = {}
+
+    try:
+        with open(
+            dosya,
+            "r",
+            encoding="utf-8-sig",
+            newline=""
+        ) as f:
+            reader = csv.DictReader(
+                f,
+                delimiter=";"
+            )
+
+            for row in reader:
+                eid = str(
+                    row.get("EventID", "")
+                ).strip()
+
+                if eid:
+                    sonuc[eid] = row
+
+    except FileNotFoundError:
+        pass
+
+    return sonuc
+
 
 def tarihi_isle(tarih_dt, simdi):
     HEDEF_TARIH = tarih_dt.strftime(
@@ -384,6 +412,8 @@ def tarihi_isle(tarih_dt, simdi):
         f"oranai_{DOSYA_TARIH}"
         "_SONUC_GUVENLI.csv"
     )
+
+    mevcut_sonuclar = mevcut_sonuclari_oku(FINAL_CSV)
 
     print()
     print("=" * 75)
@@ -589,7 +619,27 @@ def tarihi_isle(tarih_dt, simdi):
                     "%Y-%m-%d %H:%M:%S"
                 )
         }
+    for eid, yeni_row in final_rows.items():
+        eski_row = mevcut_sonuclar.get(eid)
 
+        if eski_row is None:
+            continue
+
+        degisti = False
+
+        for alan in FINAL_FIELDS:
+            if alan == "Sonuc_Kayit_Zamani":
+                continue
+
+            if str(yeni_row.get(alan, "")) != str(eski_row.get(alan, "")):
+                degisti = True
+                break
+
+        if not degisti:
+            yeni_row["Sonuc_Kayit_Zamani"] = eski_row.get(
+                "Sonuc_Kayit_Zamani",
+                yeni_row["Sonuc_Kayit_Zamani"]
+            )
 
     master = master_oku()
     onayli_rows = {}
