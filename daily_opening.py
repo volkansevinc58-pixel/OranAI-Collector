@@ -1,4 +1,4 @@
-import csv
+﻿import csv
 from datetime import datetime, timedelta
 
 MASTER = "collector_canli_master.csv"
@@ -7,6 +7,7 @@ OPENING_FIELDS = [
     "Tarih",
     "Saat",
     "EventID",
+    "Organizasyon_Kodu",
     "Ev",
     "Deplasman",
     "Ilk_Gorulme_Zamani",

@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 
 import requests
 import csv
@@ -24,7 +24,7 @@ PREMATCH = "collector_canli_prematch.csv"
 SNAPSHOT = "collector_canli_snapshots.csv"
 
 MASTER_FIELDS = [
-    "Tarih", "Saat", "Guncel_Tarih", "Guncel_Saat", "EventID", "Ev", "Deplasman",
+    "Tarih", "Saat", "Guncel_Tarih", "Guncel_Saat", "EventID", "Organizasyon_Kodu", "Ev", "Deplasman",
     "Ilk_Gorulme_Zamani",
     "Ilk_MS1", "Ilk_MSX", "Ilk_MS2",
     "Ilk_KG_Var", "Ilk_KG_Yok",
@@ -36,7 +36,7 @@ MASTER_FIELDS = [
 ]
 
 PREMATCH_FIELDS = [
-    "Tarih", "Saat", "EventID", "Ev", "Deplasman",
+    "Tarih", "Saat", "EventID", "Organizasyon_Kodu", "Ev", "Deplasman",
     "Son_PreMatch_Zamani",
     "MS1", "MSX", "MS2",
     "KG_Var", "KG_Yok",
@@ -422,6 +422,7 @@ def master_yeni_satir(
         "Guncel_Tarih": temizle(fields[7]),
         "Guncel_Saat": temizle(fields[6]),
         "EventID": eid,
+        "Organizasyon_Kodu": temizle(fields[49]),
         "Ev": temizle(fields[1]),
         "Deplasman": temizle(fields[3]),
 
@@ -459,6 +460,7 @@ def prematch_satir(
         "Tarih": temizle(fields[7]),
         "Saat": temizle(fields[6]),
         "EventID": eid,
+        "Organizasyon_Kodu": temizle(fields[49]),
         "Ev": temizle(fields[1]),
         "Deplasman": temizle(fields[3]),
 
@@ -638,6 +640,8 @@ for tarih_dt in [
 
         else:
 
+            if not master[eid].get("Organizasyon_Kodu"):
+                master[eid]["Organizasyon_Kodu"] = temizle(fields[49])
             master[eid]["Guncel_Tarih"] = tarih
             master[eid]["Guncel_Saat"] = saat
             master[eid][
