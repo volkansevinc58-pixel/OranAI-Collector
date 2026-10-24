@@ -1,0 +1,37 @@
+name: ORAN AI vNext - Unified Stage
+on:
+  push:
+    branches:
+      - oranai-next-multisource-staging
+    paths:
+      - oranai_vnext_stager.py
+      - tests/test_oranai_vnext_stager.py
+      - .github/workflows/oranai-vnext-staging.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: oranai-vnext-staging
+  cancel-in-progress: false
+jobs:
+  stage:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Offline unit tests
+        run: python -m unittest discover -s tests -p 'test_oranai_vnext_stager.py' -v
+      - name: Fetch CC0 data and stage bundles
+        run: python oranai_vnext_stager.py --approved
+      - name: Verify all staged source hashes and manifest
+        run: python oranai_vnext_stager.py --verify-only
+      - name: Publish transfer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: oranai-vnext-two-source-stage
+          path: staging/next/
+          if-no-files-found: error
+          retention-days: 30

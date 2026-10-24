@@ -1,0 +1,35 @@
+name: ORAN AI - Allowed OpenFootball Staging
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - oranai-next-multisource-staging
+    paths:
+      - staging_collect_openfootball.py
+      - tests/test_staging_openfootball.py
+      - .github/workflows/oranai-multisource-staging.yml
+permissions:
+  contents: read
+concurrency:
+  group: oranai-openfootball-staging
+  cancel-in-progress: false
+jobs:
+  stage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Test allowed source and fail-closed behavior
+        run: python -m unittest discover -s tests -p 'test_staging_openfootball.py' -v
+      - name: Fetch one CC0 season with explicit allowlist approval
+        run: python staging_collect_openfootball.py --approved --dataset 2025-26/en.1.json --output staging/en-1.json
+      - name: Upload stage-only artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: oranai-openfootball-stage
+          path: staging/en-1.json
+          if-no-files-found: error
+          retention-days: 7

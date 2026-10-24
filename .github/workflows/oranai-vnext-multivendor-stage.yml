@@ -1,0 +1,45 @@
+name: ORAN AI vNext - Independent Provider Research Stage
+on:
+  push:
+    branches: [oranai-next-multisource-staging]
+    paths:
+      - statsbomb_research_adapter.py
+      - multivendor_stage_gate.py
+      - tests/test_statsbomb_research.py
+      - .github/workflows/oranai-vnext-multivendor-stage.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: oranai-research-multivendor
+  cancel-in-progress: false
+jobs:
+  stage-only:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Both source suites offline
+        run: |
+          python -m unittest discover -s tests -p 'test_oranai_vnext_stager.py' -v
+          python -m unittest discover -s tests -p 'test_statsbomb_research.py' -v
+      - name: OpenFootball 2 datasets
+        run: python oranai_vnext_stager.py --approved
+      - name: Verify OpenFootball contracts
+        run: python oranai_vnext_stager.py --verify-only
+      - name: StatsBomb research-only dataset (attribution required)
+        run: python statsbomb_research_adapter.py --approved
+      - name: Verify independent provider contract
+        run: python statsbomb_research_adapter.py --verify-only
+      - name: Cross-provider release gate
+        run: python multivendor_stage_gate.py
+      - name: Publish temporary research evidence only
+        uses: actions/upload-artifact@v4
+        with:
+          name: oranai-two-provider-research-staging
+          path: staging/
+          if-no-files-found: error
+          retention-days: 14
